@@ -1,65 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   addDoc,
   collection,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
+import {
+  categoriesForType,
+  defaultCategoryForType,
+  type CategoryId,
+  type TransactionType,
+} from "@/lib/categories";
 import { PAYMENT_METHODS, type PaymentMethodId } from "@/lib/payment-methods";
 
-type TxType = "expense" | "income";
+type TransactionFormProps = {
+  userId: string;
+  onSuccess?: () => void;
+};
 
-export function TransactionForm({ userId }: { userId: string }) {
+export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
-  const [type, setType] = useState<TxType>("expense");
+  const [type, setType] = useState<TransactionType>("expense");
+  const [category, setCategory] = useState<CategoryId>(() =>
+    defaultCategoryForType("expense"),
+  );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("cash");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedHint, setSavedHint] = useState<string | null>(null);
-  const [recent, setRecent] = useState<
-    { id: string; merchant: string; amount: number; type: string }[]
-  >([]);
 
-  useEffect(() => {
-    const txCol = collection(
-      getFirebaseDb(),
-      "users",
-      userId,
-      "transactions",
-    );
-    const q = query(txCol, orderBy("createdAt", "desc"), limit(5));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setRecent(
-          snap.docs.map((d) => {
-            const data = d.data();
-            return {
-              id: d.id,
-              merchant: String(data.merchant ?? ""),
-              amount: Number(data.amount ?? 0),
-              type: String(data.type ?? "expense"),
-            };
-          }),
-        );
-      },
-      (err) => setError(err.message),
-    );
-    return () => unsub();
-  }, [userId]);
+  function handleTypeChange(next: TransactionType) {
+    setType(next);
+    setCategory((current) => {
+      const options = categoriesForType(next);
+      return options.some((c) => c.id === current)
+        ? current
+        : defaultCategoryForType(next);
+    });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSavedHint(null);
     const n = Number.parseFloat(amount);
     if (!Number.isFinite(n) || n <= 0) {
       setError("Enter a positive amount.");
@@ -81,6 +66,7 @@ export function TransactionForm({ userId }: { userId: string }) {
         amount: n,
         merchant: merchant.trim(),
         type,
+        category,
         paymentMethod,
         currency: "MYR",
         occurredAt: Timestamp.now(),
@@ -88,7 +74,7 @@ export function TransactionForm({ userId }: { userId: string }) {
       });
       setAmount("");
       setMerchant("");
-      setSavedHint("Saved to Firestore.");
+      onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save.");
     } finally {
@@ -97,16 +83,10 @@ export function TransactionForm({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="mt-6 w-full space-y-4 text-left">
-      <h2 className="text-center text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-        Add transaction
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-      >
+    <form onSubmit={handleSubmit} className="flex flex-col">
+      <div className="space-y-4 px-4 py-4">
         <div>
-          <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Amount (MYR)
           </label>
           <input
@@ -114,96 +94,100 @@ export function TransactionForm({ userId }: { userId: string }) {
             inputMode="decimal"
             step="0.01"
             min="0"
+            autoFocus
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-950"
+            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-lg font-medium tabular-nums dark:border-zinc-700 dark:bg-zinc-800"
             placeholder="0.00"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Merchant
           </label>
           <input
             type="text"
             value={merchant}
             onChange={(e) => setMerchant(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-950"
+            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
             placeholder="e.g. Breakfast spot"
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Type
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as TxType)}
-              className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-950"
-            >
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Payment
-            </label>
-            <select
-              value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(e.target.value as PaymentMethodId)
-              }
-              className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-600 dark:bg-zinc-950"
-            >
-              {PAYMENT_METHODS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => handleTypeChange("expense")}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition ${
+              type === "expense"
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+            }`}
+          >
+            Expense
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTypeChange("income")}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition ${
+              type === "income"
+                ? "bg-emerald-600 text-white"
+                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+            }`}
+          >
+            Income
+          </button>
         </div>
+        <div>
+          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Category
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as CategoryId)}
+            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            {categoriesForType(type).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Payment
+          </label>
+          <select
+            value={paymentMethod}
+            onChange={(e) =>
+              setPaymentMethod(e.target.value as PaymentMethodId)
+            }
+            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {error ? (
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        ) : null}
+      </div>
+
+      <div
+        className="sticky bottom-0 border-t border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white active:bg-emerald-500 disabled:opacity-50"
         >
-          {busy ? "Saving…" : "Save transaction"}
+          {busy ? "Saving…" : "Save"}
         </button>
-      </form>
-      {savedHint ? (
-        <p className="text-center text-sm text-emerald-600 dark:text-emerald-400">
-          {savedHint}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-      ) : null}
-      {recent.length > 0 ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Recent (last 5)
-          </p>
-          <ul className="mt-2 space-y-2 text-sm">
-            {recent.map((r) => (
-              <li
-                key={r.id}
-                className="flex justify-between gap-2 border-b border-zinc-100 pb-2 last:border-0 dark:border-zinc-800"
-              >
-                <span className="truncate text-zinc-800 dark:text-zinc-200">
-                  {r.merchant}
-                </span>
-                <span className="shrink-0 font-medium text-zinc-900 dark:text-zinc-50">
-                  {r.type === "income" ? "+" : "−"}
-                  {r.amount.toFixed(2)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
+      </div>
+    </form>
   );
 }

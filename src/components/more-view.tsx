@@ -1,0 +1,33 @@
+"use client";
+
+type MoreViewProps = {
+  email: string | null;
+  onSignOut: () => void;
+  busy: boolean;
+};
+
+export function MoreView({ email, onSignOut, busy }: MoreViewProps) {
+  return (
+    <div className="space-y-4">
+      <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+          Account
+        </p>
+        <p className="mt-2 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          {email ?? "Signed in"}
+        </p>
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <button
+          type="button"
+          onClick={onSignOut}
+          disabled={busy}
+          className="w-full px-4 py-3.5 text-left text-sm font-medium text-red-600 disabled:opacity-50 dark:text-red-400"
+        >
+          {busy ? "Signing out…" : "Sign out"}
+        </button>
+      </section>
+    </div>
+  );
+}

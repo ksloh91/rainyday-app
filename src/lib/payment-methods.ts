@@ -6,3 +6,7 @@ export const PAYMENT_METHODS = [
 ] as const;
 
 export type PaymentMethodId = (typeof PAYMENT_METHODS)[number]["id"];
+
+export function getPaymentMethodLabel(id: string): string {
+  return PAYMENT_METHODS.find((m) => m.id === id)?.label ?? id;
+}
