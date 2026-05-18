@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { CategoryIcon } from "@/components/category-icon";
+import { PaymentBadge } from "@/components/icons";
+import { SvgIcon } from "@/components/icons/svg-icon";
 import { getCategoryLabel } from "@/lib/categories";
 import {
   dayKey,
@@ -66,7 +68,13 @@ export function TransactionDayList({ rows }: { rows: TransactionRow[] }) {
   if (groups.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center dark:border-zinc-700">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-zinc-800">
+          <SvgIcon size={24}>
+            <rect x="4" y="5" width="16" height="16" rx="2" />
+            <path d="M8 3v4M16 3v4M4 10h16" />
+          </SvgIcon>
+        </span>
+        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
           No transactions yet.
         </p>
         <p className="mt-1 text-xs text-zinc-500">
@@ -118,13 +126,18 @@ export function TransactionDayList({ rows }: { rows: TransactionRow[] }) {
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
                       {row.merchant}
                     </p>
-                    <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                      {row.paymentMethod
-                        ? getPaymentMethodLabel(row.paymentMethod)
-                        : row.category
-                          ? getCategoryLabel(row.category)
-                          : "—"}
-                    </p>
+                    <div className="mt-0.5 flex items-center gap-1.5">
+                      {row.paymentMethod ? (
+                        <PaymentBadge paymentId={row.paymentMethod} />
+                      ) : null}
+                      <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
+                        {row.paymentMethod
+                          ? getPaymentMethodLabel(row.paymentMethod)
+                          : row.category
+                            ? getCategoryLabel(row.category)
+                            : "—"}
+                      </p>
+                    </div>
                   </div>
                   <div className="shrink-0 text-right">
                     <p

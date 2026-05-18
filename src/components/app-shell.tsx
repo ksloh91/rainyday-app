@@ -13,6 +13,7 @@ import { BottomSheet } from "@/components/bottom-sheet";
 import { HomeView } from "@/components/home-view";
 import { MoreView } from "@/components/more-view";
 import { TransactionForm } from "@/components/transaction-form";
+import { CalendarIcon } from "@/components/icons";
 import { formatTodayHeader } from "@/lib/format-date";
 
 const googleProvider = new GoogleAuthProvider();
@@ -96,7 +97,8 @@ export function AppShell() {
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
               Today
             </h1>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+              <CalendarIcon size={14} className="shrink-0 opacity-70" />
               {formatTodayHeader()}
             </p>
           </>

@@ -7,6 +7,8 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
+import { IconOptionGrid } from "@/components/icon-option-grid";
+import { ExpenseTypeIcon, IncomeTypeIcon } from "@/components/icons";
 import { getFirebaseDb } from "@/lib/firebase";
 import {
   categoriesForType,
@@ -89,17 +91,22 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
           <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Amount (MYR)
           </label>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0"
-            autoFocus
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-lg font-medium tabular-nums dark:border-zinc-700 dark:bg-zinc-800"
-            placeholder="0.00"
-          />
+          <div className="relative mt-1">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-zinc-400">
+              RM
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              autoFocus
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3.5 pr-4 pl-12 text-lg font-medium tabular-nums dark:border-zinc-700 dark:bg-zinc-800"
+              placeholder="0.00"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -113,64 +120,53 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
             placeholder="e.g. Breakfast spot"
           />
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleTypeChange("expense")}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition ${
-              type === "expense"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-            }`}
-          >
-            Expense
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTypeChange("income")}
-            className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition ${
-              type === "income"
-                ? "bg-emerald-600 text-white"
-                : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-            }`}
-          >
-            Income
-          </button>
-        </div>
         <div>
-          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Category
-          </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as CategoryId)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-          >
-            {categoriesForType(type).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Type
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleTypeChange("expense")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition ${
+                type === "expense"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+              }`}
+            >
+              <ExpenseTypeIcon size={18} />
+              Expense
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTypeChange("income")}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition ${
+                type === "income"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
+              }`}
+            >
+              <IncomeTypeIcon size={18} />
+              Income
+            </button>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Payment
-          </label>
-          <select
-            value={paymentMethod}
-            onChange={(e) =>
-              setPaymentMethod(e.target.value as PaymentMethodId)
-            }
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-          >
-            {PAYMENT_METHODS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <IconOptionGrid
+          label="Category"
+          options={categoriesForType(type)}
+          value={category}
+          onChange={(id) => setCategory(id as CategoryId)}
+          variant="category"
+          columns={4}
+        />
+        <IconOptionGrid
+          label="Payment"
+          options={PAYMENT_METHODS}
+          value={paymentMethod}
+          onChange={(id) => setPaymentMethod(id as PaymentMethodId)}
+          variant="payment"
+          columns={4}
+        />
         {error ? (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         ) : null}
