@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   addDoc,
   collection,
+  doc,
   serverTimestamp,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { IconOptionGrid } from "@/components/icon-option-grid";
 import { ExpenseTypeIcon, IncomeTypeIcon } from "@/components/icons";
@@ -17,13 +19,33 @@ import {
   type TransactionType,
 } from "@/lib/categories";
 import { PAYMENT_METHODS, type PaymentMethodId } from "@/lib/payment-methods";
+import {
+  fromDatetimeLocalValue,
+  toDatetimeLocalValue,
+  type Transaction,
+} from "@/lib/transactions";
 
 type TransactionFormProps = {
   userId: string;
+  transaction?: Transaction | null;
   onSuccess?: () => void;
 };
 
-export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
+function isCategoryId(id: string, type: TransactionType): id is CategoryId {
+  return categoriesForType(type).some((c) => c.id === id);
+}
+
+function isPaymentMethodId(id: string): id is PaymentMethodId {
+  return PAYMENT_METHODS.some((m) => m.id === id);
+}
+
+export function TransactionForm({
+  userId,
+  transaction,
+  onSuccess,
+}: TransactionFormProps) {
+  const isEdit = Boolean(transaction);
+
   const [amount, setAmount] = useState("");
   const [merchant, setMerchant] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
@@ -31,8 +53,36 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
     defaultCategoryForType("expense"),
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("cash");
+  const [occurredAtLocal, setOccurredAtLocal] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (transaction) {
+      setAmount(String(transaction.amount));
+      setMerchant(transaction.merchant);
+      setType(transaction.type);
+      setCategory(
+        isCategoryId(transaction.category, transaction.type)
+          ? transaction.category
+          : defaultCategoryForType(transaction.type),
+      );
+      setPaymentMethod(
+        isPaymentMethodId(transaction.paymentMethod)
+          ? transaction.paymentMethod
+          : "cash",
+      );
+      setOccurredAtLocal(toDatetimeLocalValue(transaction.occurredAt));
+    } else {
+      setAmount("");
+      setMerchant("");
+      setType("expense");
+      setCategory(defaultCategoryForType("expense"));
+      setPaymentMethod("cash");
+      setOccurredAtLocal(toDatetimeLocalValue(new Date()));
+    }
+    setError(null);
+  }, [transaction]);
 
   function handleTypeChange(next: TransactionType) {
     setType(next);
@@ -56,26 +106,53 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
       setError("Enter a merchant or label.");
       return;
     }
+
+    const occurredAt = isEdit
+      ? fromDatetimeLocalValue(occurredAtLocal)
+      : new Date();
+    if (!occurredAt) {
+      setError("Enter a valid date and time.");
+      return;
+    }
+
     setBusy(true);
     try {
-      const txCol = collection(
-        getFirebaseDb(),
-        "users",
-        userId,
-        "transactions",
-      );
-      await addDoc(txCol, {
+      const payload = {
         amount: n,
         merchant: merchant.trim(),
         type,
         category,
         paymentMethod,
-        currency: "MYR",
-        occurredAt: Timestamp.now(),
-        createdAt: serverTimestamp(),
-      });
-      setAmount("");
-      setMerchant("");
+        currency: transaction?.currency ?? "MYR",
+        occurredAt: Timestamp.fromDate(occurredAt),
+      };
+
+      if (isEdit && transaction) {
+        const ref = doc(
+          getFirebaseDb(),
+          "users",
+          userId,
+          "transactions",
+          transaction.id,
+        );
+        await updateDoc(ref, {
+          ...payload,
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        const txCol = collection(
+          getFirebaseDb(),
+          "users",
+          userId,
+          "transactions",
+        );
+        await addDoc(txCol, {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
+        setAmount("");
+        setMerchant("");
+      }
       onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save.");
@@ -100,7 +177,7 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
               inputMode="decimal"
               step="0.01"
               min="0"
-              autoFocus
+              autoFocus={!isEdit}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className="w-full rounded-xl border border-zinc-200 bg-zinc-50 py-3.5 pr-4 pl-12 text-lg font-medium tabular-nums dark:border-zinc-700 dark:bg-zinc-800"
@@ -120,6 +197,19 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
             placeholder="e.g. Breakfast spot"
           />
         </div>
+        {isEdit ? (
+          <div>
+            <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Date & time
+            </label>
+            <input
+              type="datetime-local"
+              value={occurredAtLocal}
+              onChange={(e) => setOccurredAtLocal(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+            />
+          </div>
+        ) : null}
         <div>
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
             Type
@@ -181,7 +271,7 @@ export function TransactionForm({ userId, onSuccess }: TransactionFormProps) {
           disabled={busy}
           className="w-full rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white active:bg-emerald-500 disabled:opacity-50"
         >
-          {busy ? "Saving…" : "Save"}
+          {busy ? "Saving…" : isEdit ? "Update" : "Save"}
         </button>
       </div>
     </form>

@@ -23,8 +23,11 @@ export function GroceriesIcon({ size, className }: GlyphProps) {
 export function TransportIcon({ size, className }: GlyphProps) {
   return (
     <SvgIcon size={size} className={className}>
-      <path d="M3 8h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" />
-      <path d="M5 8V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2M7 18h.01M17 18h.01" />
+      <path d="M5 16h14" />
+      <path d="M6.5 16 8 11h8l1.5 5" />
+      <path d="M8 11l1.5-3h5L16 11" />
+      <circle cx="7.5" cy="16" r="1.25" fill="currentColor" stroke="none" />
+      <circle cx="16.5" cy="16" r="1.25" fill="currentColor" stroke="none" />
     </SvgIcon>
   );
 }

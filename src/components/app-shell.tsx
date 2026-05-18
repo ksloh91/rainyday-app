@@ -15,15 +15,33 @@ import { MoreView } from "@/components/more-view";
 import { TransactionForm } from "@/components/transaction-form";
 import { CalendarIcon } from "@/components/icons";
 import { formatTodayHeader } from "@/lib/format-date";
+import type { Transaction } from "@/lib/transactions";
 
 const googleProvider = new GoogleAuthProvider();
 
 export function AppShell() {
   const { user, ready } = useAuth();
   const [tab, setTab] = useState<Tab>("home");
-  const [addOpen, setAddOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function openAddSheet() {
+    setEditingTransaction(null);
+    setSheetOpen(true);
+  }
+
+  function openEditSheet(transaction: Transaction) {
+    setEditingTransaction(transaction);
+    setSheetOpen(true);
+  }
+
+  function closeSheet() {
+    setSheetOpen(false);
+    setEditingTransaction(null);
+  }
 
   async function handleGoogleSignIn() {
     setError(null);
@@ -43,6 +61,7 @@ export function AppShell() {
     try {
       await signOut(getFirebaseAuth());
       setTab("home");
+      closeSheet();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign-out failed");
     } finally {
@@ -86,6 +105,10 @@ export function AppShell() {
     );
   }
 
+  const sheetTitle = editingTransaction
+    ? "Edit transaction"
+    : "Add transaction";
+
   return (
     <div className="flex min-h-dvh flex-col bg-zinc-50 dark:bg-zinc-950">
       <header
@@ -117,7 +140,10 @@ export function AppShell() {
         }}
       >
         {tab === "home" ? (
-          <HomeView userId={user.uid} />
+          <HomeView
+            userId={user.uid}
+            onEditTransaction={openEditSheet}
+          />
         ) : (
           <MoreView
             email={user.email}
@@ -130,17 +156,19 @@ export function AppShell() {
       <BottomNav
         activeTab={tab}
         onTabChange={setTab}
-        onAdd={() => setAddOpen(true)}
+        onAdd={openAddSheet}
       />
 
       <BottomSheet
-        open={addOpen}
-        title="Add transaction"
-        onClose={() => setAddOpen(false)}
+        open={sheetOpen}
+        title={sheetTitle}
+        onClose={closeSheet}
       >
         <TransactionForm
+          key={editingTransaction?.id ?? "new"}
           userId={user.uid}
-          onSuccess={() => setAddOpen(false)}
+          transaction={editingTransaction}
+          onSuccess={closeSheet}
         />
       </BottomSheet>
     </div>

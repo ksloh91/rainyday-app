@@ -7,7 +7,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  type Timestamp,
 } from "firebase/firestore";
 import {
   TransactionDayList,
@@ -15,15 +14,14 @@ import {
 } from "@/components/transaction-day-list";
 import { getFirebaseDb } from "@/lib/firebase";
 import { formatMoney, formatTodayHeader, isToday } from "@/lib/format-date";
+import { parseTransactionDoc } from "@/lib/transactions";
 
-function toDate(value: unknown): Date | null {
-  if (value && typeof value === "object" && "toDate" in value) {
-    return (value as Timestamp).toDate();
-  }
-  return null;
-}
+type HomeViewProps = {
+  userId: string;
+  onEditTransaction?: (transaction: TransactionRow) => void;
+};
 
-export function HomeView({ userId }: { userId: string }) {
+export function HomeView({ userId, onEditTransaction }: HomeViewProps) {
   const [rows, setRows] = useState<TransactionRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const todayLabel = formatTodayHeader();
@@ -40,18 +38,9 @@ export function HomeView({ userId }: { userId: string }) {
       q,
       (snap) => {
         setRows(
-          snap.docs.map((d) => {
-            const data = d.data();
-            return {
-              id: d.id,
-              merchant: String(data.merchant ?? ""),
-              amount: Number(data.amount ?? 0),
-              type: String(data.type ?? "expense"),
-              category: String(data.category ?? ""),
-              paymentMethod: String(data.paymentMethod ?? ""),
-              occurredAt: toDate(data.occurredAt ?? data.createdAt),
-            };
-          }),
+          snap.docs
+            .map((d) => parseTransactionDoc(d.id, d.data()))
+            .filter((r): r is TransactionRow => r !== null),
         );
       },
       (err) => setError(err.message),
@@ -60,9 +49,7 @@ export function HomeView({ userId }: { userId: string }) {
   }, [userId]);
 
   const { todaySpent, todayIncome } = useMemo(() => {
-    const todayRows = rows.filter(
-      (r) => r.occurredAt && isToday(r.occurredAt),
-    );
+    const todayRows = rows.filter((r) => isToday(r.occurredAt));
     const spent = todayRows
       .filter((r) => r.type === "expense")
       .reduce((sum, r) => sum + r.amount, 0);
@@ -89,14 +76,21 @@ export function HomeView({ userId }: { userId: string }) {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Transactions
-        </h2>
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Transactions
+          </h2>
+          {onEditTransaction ? (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Tap to edit
+            </p>
+          ) : null}
+        </div>
         {error ? (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
         ) : null}
         <div className="mt-3">
-          <TransactionDayList rows={rows} />
+          <TransactionDayList rows={rows} onEdit={onEditTransaction} />
         </div>
       </section>
     </div>

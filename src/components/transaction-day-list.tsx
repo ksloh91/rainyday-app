@@ -14,16 +14,9 @@ import {
   formatTime,
 } from "@/lib/format-date";
 import { getPaymentMethodLabel } from "@/lib/payment-methods";
+import type { Transaction } from "@/lib/transactions";
 
-export type TransactionRow = {
-  id: string;
-  merchant: string;
-  amount: number;
-  type: string;
-  category: string;
-  paymentMethod: string;
-  occurredAt: Date | null;
-};
+export type TransactionRow = Transaction;
 
 type DayGroup = {
   date: Date;
@@ -36,7 +29,6 @@ function groupByDay(rows: TransactionRow[]): DayGroup[] {
   const map = new Map<string, TransactionRow[]>();
 
   for (const row of rows) {
-    if (!row.occurredAt) continue;
     const key = dayKey(row.occurredAt);
     const list = map.get(key) ?? [];
     list.push(row);
@@ -45,9 +37,9 @@ function groupByDay(rows: TransactionRow[]): DayGroup[] {
 
   return [...map.entries()]
     .map(([key, transactions]) => {
-      const date = transactions[0].occurredAt!;
+      const date = transactions[0].occurredAt;
       const sorted = [...transactions].sort(
-        (a, b) => b.occurredAt!.getTime() - a.occurredAt!.getTime(),
+        (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
       );
       const net = sorted.reduce((sum, t) => {
         return sum + (t.type === "income" ? t.amount : -t.amount);
@@ -62,7 +54,12 @@ function rowAmount(row: TransactionRow) {
   return formatMoney(signed, { signed: true });
 }
 
-export function TransactionDayList({ rows }: { rows: TransactionRow[] }) {
+type TransactionDayListProps = {
+  rows: TransactionRow[];
+  onEdit?: (transaction: TransactionRow) => void;
+};
+
+export function TransactionDayList({ rows, onEdit }: TransactionDayListProps) {
   const groups = useMemo(() => groupByDay(rows), [rows]);
 
   if (groups.length === 0) {
@@ -117,10 +114,13 @@ export function TransactionDayList({ rows }: { rows: TransactionRow[] }) {
             {group.transactions.map((row) => {
               const isIncome = row.type === "income";
               return (
-                <li
-                  key={row.id}
-                  className="flex items-center gap-3 py-3.5"
-                >
+                <li key={row.id}>
+                  <button
+                    type="button"
+                    onClick={() => onEdit?.(row)}
+                    disabled={!onEdit}
+                    className="flex w-full items-center gap-3 py-3.5 text-left transition active:bg-zinc-100 disabled:cursor-default dark:active:bg-zinc-800/60"
+                  >
                   <CategoryIcon categoryId={row.category} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
@@ -149,12 +149,11 @@ export function TransactionDayList({ rows }: { rows: TransactionRow[] }) {
                     >
                       {rowAmount(row)}
                     </p>
-                    {row.occurredAt ? (
-                      <p className="mt-0.5 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
-                        {formatTime(row.occurredAt)}
-                      </p>
-                    ) : null}
+                    <p className="mt-0.5 text-xs tabular-nums text-zinc-500 dark:text-zinc-400">
+                      {formatTime(row.occurredAt)}
+                    </p>
                   </div>
+                  </button>
                 </li>
               );
             })}
