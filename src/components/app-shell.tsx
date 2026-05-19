@@ -1,13 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { useMemo, useState } from "react";
+import { signInWithGoogle, signOutUser } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserTransactions } from "@/hooks/use-user-transactions";
 import { BottomNav, type Tab } from "@/components/bottom-nav";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { HomeView } from "@/components/home-view";
@@ -15,9 +11,8 @@ import { MoreView } from "@/components/more-view";
 import { TransactionForm } from "@/components/transaction-form";
 import { CalendarIcon } from "@/components/icons";
 import { formatTodayHeader } from "@/lib/format-date";
+import { collectFieldSuggestions } from "@/lib/transaction-suggestions";
 import type { Transaction } from "@/lib/transactions";
-
-const googleProvider = new GoogleAuthProvider();
 
 export function AppShell() {
   const { user, ready } = useAuth();
@@ -27,6 +22,18 @@ export function AppShell() {
     useState<Transaction | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const userId = user?.uid ?? "";
+  const { rows: transactions, error: transactionsError } =
+    useUserTransactions(userId);
+  const descriptionSuggestions = useMemo(
+    () => collectFieldSuggestions(transactions, "description"),
+    [transactions],
+  );
+  const merchantSuggestions = useMemo(
+    () => collectFieldSuggestions(transactions, "merchant"),
+    [transactions],
+  );
 
   function openAddSheet() {
     setEditingTransaction(null);
@@ -47,7 +54,7 @@ export function AppShell() {
     setError(null);
     setBusy(true);
     try {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
+      await signInWithGoogle();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign-in failed");
     } finally {
@@ -59,7 +66,7 @@ export function AppShell() {
     setError(null);
     setBusy(true);
     try {
-      await signOut(getFirebaseAuth());
+      await signOutUser();
       setTab("home");
       closeSheet();
     } catch (e) {
@@ -141,7 +148,8 @@ export function AppShell() {
       >
         {tab === "home" ? (
           <HomeView
-            userId={user.uid}
+            rows={transactions}
+            error={transactionsError}
             onEditTransaction={openEditSheet}
           />
         ) : (
@@ -168,6 +176,8 @@ export function AppShell() {
           key={editingTransaction?.id ?? "new"}
           userId={user.uid}
           transaction={editingTransaction}
+          descriptionSuggestions={descriptionSuggestions}
+          merchantSuggestions={merchantSuggestions}
           onSuccess={closeSheet}
         />
       </BottomSheet>

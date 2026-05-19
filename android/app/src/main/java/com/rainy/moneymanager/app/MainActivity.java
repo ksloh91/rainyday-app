@@ -1,4 +1,4 @@
-package com.moneymanager.app;
+package com.rainy.moneymanager.app;
 
 import com.getcapacitor.BridgeActivity;
 

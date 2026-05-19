@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "777938271136",
+    "project_id": "rainyday-app-7f59f",
+    "storage_bucket": "rainyday-app-7f59f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:777938271136:android:1cfbe6460b0950679c42c5",
+        "android_client_info": {
+          "package_name": "com.rainy.moneymanager.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "777938271136-i7ru45ogacqr8bpoo6t0cge3qhjvgrlv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rainy.moneymanager.app",
+            "certificate_hash": "8c31fdfbd5ab48579b68055977c452ac2616966b"
+          }
+        },
+        {
+          "client_id": "777938271136-ronc1vvm3bjja8l3ousdr0ql4mj761gl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHrYPhIyHhRh4nTILka4-B7SN_mmbHdRg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "777938271136-ronc1vvm3bjja8l3ousdr0ql4mj761gl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

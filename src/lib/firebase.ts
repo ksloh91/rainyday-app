@@ -1,5 +1,11 @@
+import { Capacitor } from "@capacitor/core";
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import {
+  getAuth,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  type Auth,
+} from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
@@ -24,8 +30,20 @@ function getFirebaseApp(): FirebaseApp {
   return getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 }
 
+let authInstance: Auth | undefined;
+
 export function getFirebaseAuth(): Auth {
-  return getAuth(getFirebaseApp());
+  if (authInstance) return authInstance;
+
+  const app = getFirebaseApp();
+  if (Capacitor.isNativePlatform()) {
+    authInstance = initializeAuth(app, {
+      persistence: indexedDBLocalPersistence,
+    });
+  } else {
+    authInstance = getAuth(app);
+  }
+  return authInstance;
 }
 
 export function getFirebaseDb(): Firestore {

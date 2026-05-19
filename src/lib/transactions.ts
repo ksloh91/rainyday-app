@@ -5,6 +5,7 @@ import type { TransactionType } from "@/lib/categories";
 
 export type Transaction = {
   id: string;
+  description: string;
   merchant: string;
   amount: number;
   type: TransactionType;
@@ -34,6 +35,7 @@ export function parseTransactionDoc(
 
   return {
     id,
+    description: String(data.description ?? ""),
     merchant: String(data.merchant ?? ""),
     amount,
     type,
@@ -42,6 +44,20 @@ export function parseTransactionDoc(
     currency: String(data.currency ?? "MYR"),
     occurredAt,
   };
+}
+
+export function transactionDisplayTitle(tx: Transaction): string {
+  const description = tx.description.trim();
+  if (description) return description;
+  const merchant = tx.merchant.trim();
+  return merchant || "—";
+}
+
+export function transactionDisplaySubtitle(tx: Transaction): string | null {
+  const description = tx.description.trim();
+  const merchant = tx.merchant.trim();
+  if (description && merchant) return merchant;
+  return null;
 }
 
 export function toDatetimeLocalValue(date: Date) {

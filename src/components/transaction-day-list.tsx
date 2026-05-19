@@ -14,7 +14,11 @@ import {
   formatTime,
 } from "@/lib/format-date";
 import { getPaymentMethodLabel } from "@/lib/payment-methods";
-import type { Transaction } from "@/lib/transactions";
+import {
+  transactionDisplaySubtitle,
+  transactionDisplayTitle,
+  type Transaction,
+} from "@/lib/transactions";
 
 export type TransactionRow = Transaction;
 
@@ -113,6 +117,7 @@ export function TransactionDayList({ rows, onEdit }: TransactionDayListProps) {
           <ul className="divide-y divide-zinc-100 dark:divide-zinc-800/80">
             {group.transactions.map((row) => {
               const isIncome = row.type === "income";
+              const place = transactionDisplaySubtitle(row);
               return (
                 <li key={row.id}>
                   <button
@@ -124,18 +129,19 @@ export function TransactionDayList({ rows, onEdit }: TransactionDayListProps) {
                   <CategoryIcon categoryId={row.category} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
-                      {row.merchant}
+                      {transactionDisplayTitle(row)}
                     </p>
                     <div className="mt-0.5 flex items-center gap-1.5">
                       {row.paymentMethod ? (
                         <PaymentBadge paymentId={row.paymentMethod} />
                       ) : null}
                       <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                        {row.paymentMethod
-                          ? getPaymentMethodLabel(row.paymentMethod)
-                          : row.category
-                            ? getCategoryLabel(row.category)
-                            : "—"}
+                        {place ??
+                          (row.paymentMethod
+                            ? getPaymentMethodLabel(row.paymentMethod)
+                            : row.category
+                              ? getCategoryLabel(row.category)
+                              : "—")}
                       </p>
                     </div>
                   </div>
