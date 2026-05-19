@@ -5,15 +5,28 @@ import {
   TransactionDayList,
   type TransactionRow,
 } from "@/components/transaction-day-list";
+import { CategoryBudgetProgress } from "@/components/category-budget-progress";
+import {
+  buildBudgetStatuses,
+  groupBudgetStatuses,
+  type CategoryBudget,
+} from "@/lib/budgets";
+import { getCategoryLabel } from "@/lib/categories";
 import { formatMoney, formatTodayHeader, isToday } from "@/lib/format-date";
 
 type HomeViewProps = {
   rows: TransactionRow[];
+  budgets?: CategoryBudget[];
   error?: string | null;
   onEditTransaction?: (transaction: TransactionRow) => void;
 };
 
-export function HomeView({ rows, error, onEditTransaction }: HomeViewProps) {
+export function HomeView({
+  rows,
+  budgets = [],
+  error,
+  onEditTransaction,
+}: HomeViewProps) {
   const todayLabel = formatTodayHeader();
 
   const { todaySpent, todayIncome } = useMemo(() => {
@@ -26,6 +39,11 @@ export function HomeView({ rows, error, onEditTransaction }: HomeViewProps) {
       .reduce((sum, r) => sum + r.amount, 0);
     return { todaySpent: spent, todayIncome: income };
   }, [rows]);
+
+  const budgetGroups = useMemo(() => {
+    const statuses = buildBudgetStatuses(budgets, rows, getCategoryLabel);
+    return groupBudgetStatuses(statuses);
+  }, [budgets, rows]);
 
   return (
     <div className="space-y-5">
@@ -42,6 +60,8 @@ export function HomeView({ rows, error, onEditTransaction }: HomeViewProps) {
           <p className="mt-2 text-sm text-emerald-100">Spent today</p>
         )}
       </section>
+
+      <CategoryBudgetProgress groups={budgetGroups} />
 
       <section>
         <div className="flex items-baseline justify-between gap-2">

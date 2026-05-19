@@ -12,6 +12,56 @@ export function isToday(date: Date) {
   return isSameDay(date, new Date());
 }
 
+/** Monday-start week (common for MY). */
+export function startOfWeek(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function isInWeekContaining(date: Date, weekStart: Date) {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 7);
+  return date >= weekStart && date < end;
+}
+
+export function isThisWeek(date: Date, now = new Date()) {
+  return isInWeekContaining(date, startOfWeek(now));
+}
+
+export function isLastWeek(date: Date, now = new Date()) {
+  const lastStart = startOfWeek(now);
+  lastStart.setDate(lastStart.getDate() - 7);
+  return isInWeekContaining(date, lastStart);
+}
+
+export function isThisMonth(date: Date, now = new Date()) {
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
+}
+
+export function formatWeekRange(now = new Date()) {
+  const start = startOfWeek(now);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+  });
+  return `${fmt.format(start)} – ${fmt.format(end)}`;
+}
+
+export function formatMonthLabel(now = new Date()) {
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
+    now,
+  );
+}
+
 export function isYesterday(date: Date) {
   const y = new Date();
   y.setDate(y.getDate() - 1);
