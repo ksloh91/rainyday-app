@@ -3,14 +3,16 @@
 import { useMemo, useState } from "react";
 import { signInWithGoogle, signOutUser } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
+import { useCategoryBudgets } from "@/hooks/use-category-budgets";
 import { useUserTransactions } from "@/hooks/use-user-transactions";
 import { BottomNav, type Tab } from "@/components/bottom-nav";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { HomeView } from "@/components/home-view";
+import { InsightsView } from "@/components/insights-view";
 import { MoreView } from "@/components/more-view";
 import { TransactionForm } from "@/components/transaction-form";
 import { CalendarIcon } from "@/components/icons";
-import { formatTodayHeader } from "@/lib/format-date";
+import { formatTodayHeader, formatWeekRange } from "@/lib/format-date";
 import { collectFieldSuggestions } from "@/lib/transaction-suggestions";
 import type { Transaction } from "@/lib/transactions";
 
@@ -25,7 +27,14 @@ export function AppShell() {
 
   const userId = user?.uid ?? "";
   const { rows: transactions, error: transactionsError } =
-    useUserTransactions(userId);
+    useUserTransactions(userId, 200);
+  const {
+    budgets,
+    error: budgetsError,
+    loading: budgetsLoading,
+    savingId: savingBudgetId,
+    setCategoryBudget,
+  } = useCategoryBudgets(userId);
   const descriptionSuggestions = useMemo(
     () => collectFieldSuggestions(transactions, "description"),
     [transactions],
@@ -132,6 +141,15 @@ export function AppShell() {
               {formatTodayHeader()}
             </p>
           </>
+        ) : tab === "insights" ? (
+          <>
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              Insights
+            </h1>
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              {formatWeekRange()}
+            </p>
+          </>
         ) : (
           <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
             More
@@ -149,12 +167,20 @@ export function AppShell() {
         {tab === "home" ? (
           <HomeView
             rows={transactions}
+            budgets={budgets}
             error={transactionsError}
             onEditTransaction={openEditSheet}
           />
+        ) : tab === "insights" ? (
+          <InsightsView rows={transactions} budgets={budgets} />
         ) : (
           <MoreView
             email={user.email}
+            budgets={budgets}
+            budgetsLoading={budgetsLoading}
+            budgetsError={budgetsError}
+            savingBudgetId={savingBudgetId}
+            onSetCategoryBudget={setCategoryBudget}
             onSignOut={handleSignOut}
             busy={busy}
           />

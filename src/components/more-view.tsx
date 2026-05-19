@@ -1,14 +1,43 @@
 "use client";
 
+import { BudgetsSettings } from "@/components/budgets-settings";
+import type { CategoryId } from "@/lib/categories";
+import type { CategoryBudget, CategoryBudgetLimits } from "@/lib/budgets";
+
 type MoreViewProps = {
   email: string | null;
+  budgets: CategoryBudget[];
+  budgetsLoading?: boolean;
+  budgetsError?: string | null;
+  savingBudgetId: CategoryId | null;
+  onSetCategoryBudget: (
+    categoryId: CategoryId,
+    limits: CategoryBudgetLimits,
+  ) => Promise<void>;
   onSignOut: () => void;
   busy: boolean;
 };
 
-export function MoreView({ email, onSignOut, busy }: MoreViewProps) {
+export function MoreView({
+  email,
+  budgets,
+  budgetsLoading,
+  budgetsError,
+  savingBudgetId,
+  onSetCategoryBudget,
+  onSignOut,
+  busy,
+}: MoreViewProps) {
   return (
     <div className="space-y-4">
+      <BudgetsSettings
+        budgets={budgets}
+        loading={budgetsLoading}
+        error={budgetsError}
+        savingId={savingBudgetId}
+        onSave={onSetCategoryBudget}
+      />
+
       <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
           Account
