@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-} from "firebase/auth";
-import { getFirebaseAuth } from "@/lib/firebase";
+import { signInWithGoogle, signOutUser } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { BottomNav, type Tab } from "@/components/bottom-nav";
 import { BottomSheet } from "@/components/bottom-sheet";
@@ -16,8 +11,6 @@ import { TransactionForm } from "@/components/transaction-form";
 import { CalendarIcon } from "@/components/icons";
 import { formatTodayHeader } from "@/lib/format-date";
 import type { Transaction } from "@/lib/transactions";
-
-const googleProvider = new GoogleAuthProvider();
 
 export function AppShell() {
   const { user, ready } = useAuth();
@@ -47,7 +40,7 @@ export function AppShell() {
     setError(null);
     setBusy(true);
     try {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
+      await signInWithGoogle();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign-in failed");
     } finally {
@@ -59,7 +52,7 @@ export function AppShell() {
     setError(null);
     setBusy(true);
     try {
-      await signOut(getFirebaseAuth());
+      await signOutUser();
       setTab("home");
       closeSheet();
     } catch (e) {

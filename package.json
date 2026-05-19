@@ -4,13 +4,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:mobile": "next dev --hostname 0.0.0.0 --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "build:mobile": "next build && cap sync",
-    "android": "cap open android"
+    "android": "cap open android",
+    "android:devices": "adb devices -l",
+    "android:sha1": "cd android && ./gradlew signingReport",
+    "android:reverse": "adb -s $(bash scripts/android-adb-device.sh) reverse tcp:3000 tcp:3000",
+    "android:sync:live": "CAPACITOR_LIVE_RELOAD=true cap sync android",
+    "android:run": "bash scripts/android-cap-run.sh",
+    "android:install": "npm run build:mobile && npm run android:run",
+    "android:rebuild": "npm run build:mobile && npm run android:run",
+    "android:live": "npm run android:reverse && npm run android:sync:live && npm run android:run",
+    "android:run:bundled": "npm run build:mobile && npm run android:run"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.2.0",
     "@capacitor/android": "^8.3.1",
     "@capacitor/app": "^8.1.0",
     "@capacitor/camera": "^8.2.0",

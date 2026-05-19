@@ -71,8 +71,9 @@ Reduce retyping for frequent merchants (e.g. same breakfast place).
 
 ## Developer workflow (mobile)
 
-1. `npm run dev` — web development.
-2. `npm run build:mobile` — production static build + `cap sync` into `android/`.
-3. `npm run android` — open Android Studio project.
+1. `npm run dev` — web development in the browser.
+2. **Physical device (live reload):** see [docs/MOBILE-DEV.md](docs/MOBILE-DEV.md) — install once, then `npm run dev:mobile` + `npm run android:live` over USB.
+3. `npm run build:mobile` — production static build + `cap sync` into `android/`.
+4. `npm run android` — open Android Studio project.
 
 Ensure `.env.local` is populated from `.env.example` before exercising Firebase in the app.

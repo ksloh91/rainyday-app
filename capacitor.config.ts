@@ -1,12 +1,28 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
+const liveReload = process.env.CAPACITOR_LIVE_RELOAD === "true";
+/** Use http://localhost:3000 with `adb reverse tcp:3000 tcp:3000` over USB. */
+const devServerUrl =
+  process.env.CAPACITOR_SERVER_URL ?? "http://localhost:3000";
+
 const config: CapacitorConfig = {
-  appId: "com.moneymanager.app",
+  appId: "com.rainy.moneymanager.app",
   appName: "Money Manager",
   webDir: "out",
-  server: {
-    androidScheme: "https",
+  plugins: {
+    FirebaseAuthentication: {
+      providers: ["google.com"],
+    },
   },
+  server: liveReload
+    ? {
+        url: devServerUrl.replace(/\/$/, ""),
+        cleartext: true,
+        androidScheme: "http",
+      }
+    : {
+        androidScheme: "https",
+      },
 };
 
 export default config;
