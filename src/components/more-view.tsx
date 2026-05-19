@@ -1,8 +1,10 @@
 "use client";
 
 import { BudgetsSettings } from "@/components/budgets-settings";
+import { RecurringRulesSection } from "@/components/recurring-rules-section";
 import type { CategoryId } from "@/lib/categories";
 import type { CategoryBudget, CategoryBudgetLimits } from "@/lib/budgets";
+import type { RecurringRule } from "@/lib/recurring";
 
 type MoreViewProps = {
   email: string | null;
@@ -14,6 +16,14 @@ type MoreViewProps = {
     categoryId: CategoryId,
     limits: CategoryBudgetLimits,
   ) => Promise<void>;
+  recurringRules: RecurringRule[];
+  recurringLoading?: boolean;
+  recurringMaterializing?: boolean;
+  recurringError?: string | null;
+  onAddRecurring: () => void;
+  onEditRecurring: (rule: RecurringRule) => void;
+  onToggleRecurring: (rule: RecurringRule) => void;
+  onDeleteRecurring: (rule: RecurringRule) => void;
   onSignOut: () => void;
   busy: boolean;
 };
@@ -25,11 +35,30 @@ export function MoreView({
   budgetsError,
   savingBudgetId,
   onSetCategoryBudget,
+  recurringRules,
+  recurringLoading,
+  recurringMaterializing,
+  recurringError,
+  onAddRecurring,
+  onEditRecurring,
+  onToggleRecurring,
+  onDeleteRecurring,
   onSignOut,
   busy,
 }: MoreViewProps) {
   return (
     <div className="space-y-4">
+      <RecurringRulesSection
+        rules={recurringRules}
+        loading={recurringLoading}
+        materializing={recurringMaterializing}
+        error={recurringError}
+        onAdd={onAddRecurring}
+        onEdit={onEditRecurring}
+        onToggleActive={onToggleRecurring}
+        onDelete={onDeleteRecurring}
+      />
+
       <BudgetsSettings
         budgets={budgets}
         loading={budgetsLoading}

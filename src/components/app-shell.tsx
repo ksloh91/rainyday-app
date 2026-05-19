@@ -10,11 +10,16 @@ import { BottomSheet } from "@/components/bottom-sheet";
 import { HomeView } from "@/components/home-view";
 import { InsightsView } from "@/components/insights-view";
 import { MoreView } from "@/components/more-view";
+import { RecurringRuleForm } from "@/components/recurring-rule-form";
 import { TransactionForm } from "@/components/transaction-form";
 import { CalendarIcon } from "@/components/icons";
 import { formatTodayHeader, formatWeekRange } from "@/lib/format-date";
 import { collectFieldSuggestions } from "@/lib/transaction-suggestions";
+import { useRecurringRules } from "@/hooks/use-recurring-rules";
+import type { RecurringRule } from "@/lib/recurring";
 import type { Transaction } from "@/lib/transactions";
+
+type SheetKind = "transaction" | "recurring" | null;
 
 export function AppShell() {
   const { user, ready } = useAuth();
@@ -22,6 +27,9 @@ export function AppShell() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
+  const [editingRecurring, setEditingRecurring] =
+    useState<RecurringRule | null>(null);
+  const [sheetKind, setSheetKind] = useState<SheetKind>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +43,15 @@ export function AppShell() {
     savingId: savingBudgetId,
     setCategoryBudget,
   } = useCategoryBudgets(userId);
+  const {
+    rules: recurringRules,
+    error: recurringError,
+    loading: recurringLoading,
+    materializing: recurringMaterializing,
+    saveRule,
+    deleteRule,
+    setRuleActive,
+  } = useRecurringRules(userId);
   const descriptionSuggestions = useMemo(
     () => collectFieldSuggestions(transactions, "description"),
     [transactions],
@@ -46,17 +63,48 @@ export function AppShell() {
 
   function openAddSheet() {
     setEditingTransaction(null);
+    setEditingRecurring(null);
+    setSheetKind("transaction");
     setSheetOpen(true);
   }
 
   function openEditSheet(transaction: Transaction) {
     setEditingTransaction(transaction);
+    setEditingRecurring(null);
+    setSheetKind("transaction");
+    setSheetOpen(true);
+  }
+
+  function openAddRecurring() {
+    setEditingRecurring(null);
+    setEditingTransaction(null);
+    setSheetKind("recurring");
+    setSheetOpen(true);
+  }
+
+  function openEditRecurring(rule: RecurringRule) {
+    setEditingRecurring(rule);
+    setEditingTransaction(null);
+    setSheetKind("recurring");
     setSheetOpen(true);
   }
 
   function closeSheet() {
     setSheetOpen(false);
     setEditingTransaction(null);
+    setEditingRecurring(null);
+    setSheetKind(null);
+  }
+
+  async function handleDeleteRecurring(rule: RecurringRule) {
+    if (!confirm(`Delete recurring "${rule.description || rule.merchant || "item"}"?`)) {
+      return;
+    }
+    try {
+      await deleteRule(rule.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete.");
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -121,9 +169,14 @@ export function AppShell() {
     );
   }
 
-  const sheetTitle = editingTransaction
-    ? "Edit transaction"
-    : "Add transaction";
+  const sheetTitle =
+    sheetKind === "recurring"
+      ? editingRecurring
+        ? "Edit recurring"
+        : "Add recurring"
+      : editingTransaction
+        ? "Edit transaction"
+        : "Add transaction";
 
   return (
     <div className="flex min-h-dvh flex-col bg-zinc-50 dark:bg-zinc-950">
@@ -181,6 +234,14 @@ export function AppShell() {
             budgetsError={budgetsError}
             savingBudgetId={savingBudgetId}
             onSetCategoryBudget={setCategoryBudget}
+            recurringRules={recurringRules}
+            recurringLoading={recurringLoading}
+            recurringMaterializing={recurringMaterializing}
+            recurringError={recurringError}
+            onAddRecurring={openAddRecurring}
+            onEditRecurring={openEditRecurring}
+            onToggleRecurring={(rule) => setRuleActive(rule.id, !rule.active)}
+            onDeleteRecurring={handleDeleteRecurring}
             onSignOut={handleSignOut}
             busy={busy}
           />
@@ -198,14 +259,25 @@ export function AppShell() {
         title={sheetTitle}
         onClose={closeSheet}
       >
-        <TransactionForm
-          key={editingTransaction?.id ?? "new"}
-          userId={user.uid}
-          transaction={editingTransaction}
-          descriptionSuggestions={descriptionSuggestions}
-          merchantSuggestions={merchantSuggestions}
-          onSuccess={closeSheet}
-        />
+        {sheetKind === "recurring" ? (
+          <RecurringRuleForm
+            key={editingRecurring?.id ?? "new-recurring"}
+            rule={editingRecurring}
+            onSave={async (input, existingId) => {
+              await saveRule(input, existingId);
+            }}
+            onSuccess={closeSheet}
+          />
+        ) : (
+          <TransactionForm
+            key={editingTransaction?.id ?? "new"}
+            userId={user.uid}
+            transaction={editingTransaction}
+            descriptionSuggestions={descriptionSuggestions}
+            merchantSuggestions={merchantSuggestions}
+            onSuccess={closeSheet}
+          />
+        )}
       </BottomSheet>
     </div>
   );
