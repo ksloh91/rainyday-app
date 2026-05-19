@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AutocompleteInput } from "@/components/autocomplete-input";
 import {
   addDoc,
   collection,
@@ -28,6 +29,8 @@ import {
 type TransactionFormProps = {
   userId: string;
   transaction?: Transaction | null;
+  descriptionSuggestions?: string[];
+  merchantSuggestions?: string[];
   onSuccess?: () => void;
 };
 
@@ -42,11 +45,14 @@ function isPaymentMethodId(id: string): id is PaymentMethodId {
 export function TransactionForm({
   userId,
   transaction,
+  descriptionSuggestions = [],
+  merchantSuggestions = [],
   onSuccess,
 }: TransactionFormProps) {
   const isEdit = Boolean(transaction);
 
   const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
   const [merchant, setMerchant] = useState("");
   const [type, setType] = useState<TransactionType>("expense");
   const [category, setCategory] = useState<CategoryId>(() =>
@@ -60,6 +66,7 @@ export function TransactionForm({
   useEffect(() => {
     if (transaction) {
       setAmount(String(transaction.amount));
+      setDescription(transaction.description);
       setMerchant(transaction.merchant);
       setType(transaction.type);
       setCategory(
@@ -75,6 +82,7 @@ export function TransactionForm({
       setOccurredAtLocal(toDatetimeLocalValue(transaction.occurredAt));
     } else {
       setAmount("");
+      setDescription("");
       setMerchant("");
       setType("expense");
       setCategory(defaultCategoryForType("expense"));
@@ -102,8 +110,8 @@ export function TransactionForm({
       setError("Enter a positive amount.");
       return;
     }
-    if (!merchant.trim()) {
-      setError("Enter a merchant or label.");
+    if (!description.trim() && !merchant.trim()) {
+      setError("Enter what this was for (e.g. lunch) or a merchant.");
       return;
     }
 
@@ -119,6 +127,7 @@ export function TransactionForm({
     try {
       const payload = {
         amount: n,
+        description: description.trim(),
         merchant: merchant.trim(),
         type,
         category,
@@ -151,6 +160,7 @@ export function TransactionForm({
           createdAt: serverTimestamp(),
         });
         setAmount("");
+        setDescription("");
         setMerchant("");
       }
       onSuccess?.();
@@ -185,18 +195,25 @@ export function TransactionForm({
             />
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Merchant
-          </label>
-          <input
-            type="text"
-            value={merchant}
-            onChange={(e) => setMerchant(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-            placeholder="e.g. Breakfast spot"
-          />
-        </div>
+        <AutocompleteInput
+          label="What was it?"
+          value={description}
+          onChange={setDescription}
+          suggestions={descriptionSuggestions}
+          placeholder="e.g. lunch, snacks, dinner"
+        />
+        <AutocompleteInput
+          label={
+            <>
+              Merchant{" "}
+              <span className="font-normal text-zinc-400">(optional)</span>
+            </>
+          }
+          value={merchant}
+          onChange={setMerchant}
+          suggestions={merchantSuggestions}
+          placeholder="e.g. McDonald's, 7-Eleven"
+        />
         {isEdit ? (
           <div>
             <label className="block text-xs font-medium text-zinc-500 dark:text-zinc-400">

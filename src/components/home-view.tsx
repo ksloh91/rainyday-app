@@ -1,52 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  collection,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
+import { useMemo } from "react";
 import {
   TransactionDayList,
   type TransactionRow,
 } from "@/components/transaction-day-list";
-import { getFirebaseDb } from "@/lib/firebase";
 import { formatMoney, formatTodayHeader, isToday } from "@/lib/format-date";
-import { parseTransactionDoc } from "@/lib/transactions";
 
 type HomeViewProps = {
-  userId: string;
+  rows: TransactionRow[];
+  error?: string | null;
   onEditTransaction?: (transaction: TransactionRow) => void;
 };
 
-export function HomeView({ userId, onEditTransaction }: HomeViewProps) {
-  const [rows, setRows] = useState<TransactionRow[]>([]);
-  const [error, setError] = useState<string | null>(null);
+export function HomeView({ rows, error, onEditTransaction }: HomeViewProps) {
   const todayLabel = formatTodayHeader();
-
-  useEffect(() => {
-    const txCol = collection(
-      getFirebaseDb(),
-      "users",
-      userId,
-      "transactions",
-    );
-    const q = query(txCol, orderBy("createdAt", "desc"), limit(50));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        setRows(
-          snap.docs
-            .map((d) => parseTransactionDoc(d.id, d.data()))
-            .filter((r): r is TransactionRow => r !== null),
-        );
-      },
-      (err) => setError(err.message),
-    );
-    return () => unsub();
-  }, [userId]);
 
   const { todaySpent, todayIncome } = useMemo(() => {
     const todayRows = rows.filter((r) => isToday(r.occurredAt));
