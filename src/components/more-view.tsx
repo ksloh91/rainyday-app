@@ -1,11 +1,13 @@
 "use client";
 
 import { BudgetsSettings } from "@/components/budgets-settings";
+import { RemindersSettings } from "@/components/reminders-settings";
 import { RecurringRulesSection } from "@/components/recurring-rules-section";
 import { AppCard, AppCardBody, AppCardHeader } from "@/components/ui-card";
 import type { CategoryId } from "@/lib/categories";
 import type { CategoryBudget, CategoryBudgetLimits } from "@/lib/budgets";
 import type { RecurringRule } from "@/lib/recurring";
+import type { ReminderSettings } from "@/lib/reminders";
 
 type MoreViewProps = {
   email: string | null;
@@ -25,6 +27,11 @@ type MoreViewProps = {
   onEditRecurring: (rule: RecurringRule) => void;
   onToggleRecurring: (rule: RecurringRule) => void;
   onDeleteRecurring: (rule: RecurringRule) => void;
+  reminderSettings: ReminderSettings;
+  remindersLoading?: boolean;
+  remindersSaving?: boolean;
+  remindersError?: string | null;
+  onSaveReminderSettings: (settings: ReminderSettings) => Promise<void>;
   onSignOut: () => void;
   busy: boolean;
 };
@@ -44,11 +51,24 @@ export function MoreView({
   onEditRecurring,
   onToggleRecurring,
   onDeleteRecurring,
+  reminderSettings,
+  remindersLoading,
+  remindersSaving,
+  remindersError,
+  onSaveReminderSettings,
   onSignOut,
   busy,
 }: MoreViewProps) {
   return (
     <div className="space-y-4">
+      <RemindersSettings
+        settings={reminderSettings}
+        loading={remindersLoading}
+        saving={remindersSaving}
+        error={remindersError}
+        onSave={onSaveReminderSettings}
+      />
+
       <RecurringRulesSection
         rules={recurringRules}
         loading={recurringLoading}

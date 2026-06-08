@@ -13,6 +13,10 @@ const config: CapacitorConfig = {
     FirebaseAuthentication: {
       providers: ["google.com"],
     },
+    LocalNotifications: {
+      smallIcon: "ic_stat_notification",
+      iconColor: "#059669",
+    },
   },
   server: liveReload
     ? {
