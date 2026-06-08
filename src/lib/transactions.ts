@@ -60,6 +60,20 @@ export function transactionDisplaySubtitle(tx: Transaction): string | null {
   return null;
 }
 
+export function merchantDisplayName(tx: Transaction): string | null {
+  const merchant = tx.merchant.trim();
+  return merchant || null;
+}
+
+export function merchantGroupKey(tx: Transaction): string | null {
+  const merchant = tx.merchant.trim();
+  return merchant ? merchant.toLowerCase() : null;
+}
+
+export function merchantMatchesKey(tx: Transaction, key: string): boolean {
+  return merchantGroupKey(tx) === key;
+}
+
 export function toDatetimeLocalValue(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;

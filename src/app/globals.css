@@ -64,8 +64,12 @@ button {
   .home-hero-card,
   .home-tx-card,
   .home-empty-state,
-  .reminder-popup-enter {
+  .reminder-popup-enter,
+  .bottom-sheet-enter,
+  .bottom-sheet-exit {
     animation: none;
+    transform: none;
+    will-change: auto;
   }
 }
 
@@ -82,4 +86,36 @@ button {
 
 .reminder-popup-enter {
   animation: reminder-popup-in 0.28s ease-out;
+}
+
+@keyframes bottom-sheet-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bottom-sheet-out {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+.bottom-sheet-enter {
+  animation: bottom-sheet-in 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  will-change: transform;
+}
+
+.bottom-sheet-exit {
+  animation: bottom-sheet-out 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  will-change: transform;
+}
+
+.bottom-sheet-open {
+  transform: translate3d(0, 0, 0);
 }

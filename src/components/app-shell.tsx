@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import {
+  useAppBackNavigation,
+  type AppBackLayer,
+} from "@/hooks/use-app-back-navigation";
 import { signInWithGoogle, signOutUser } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategoryBudgets } from "@/hooks/use-category-budgets";
@@ -8,7 +12,10 @@ import { useUserTransactions } from "@/hooks/use-user-transactions";
 import { BottomNav, type Tab } from "@/components/bottom-nav";
 import { BottomSheet } from "@/components/bottom-sheet";
 import { HomeView } from "@/components/home-view";
-import { InsightsView } from "@/components/insights-view";
+import {
+  InsightsView,
+  type SelectedMerchant,
+} from "@/components/insights-view";
 import { MoreView } from "@/components/more-view";
 import { RecurringRuleForm } from "@/components/recurring-rule-form";
 import { TransactionForm } from "@/components/transaction-form";
@@ -30,6 +37,8 @@ type SheetKind = "transaction" | "recurring" | null;
 export function AppShell() {
   const { user, ready } = useAuth();
   const [tab, setTab] = useState<Tab>("home");
+  const [selectedMerchant, setSelectedMerchant] =
+    useState<SelectedMerchant | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -76,12 +85,58 @@ export function AppShell() {
     error: remindersError,
     updateSettings: updateReminderSettings,
   } = useReminderSettings(userId);
+  const closeSheetStateOnly = useCallback(() => {
+    setSheetOpen(false);
+    setEditingTransaction(null);
+    setEditingRecurring(null);
+    setSheetKind(null);
+  }, []);
+
+  const { pushLayer, dismissLayer, clearLayers } = useAppBackNavigation({
+    onPopSheet: closeSheetStateOnly,
+    onPopMerchant: () => setSelectedMerchant(null),
+    onPopInsights: () => setTab("home"),
+  });
+
   const openAddSheet = useCallback(() => {
     setEditingTransaction(null);
     setEditingRecurring(null);
     setSheetKind("transaction");
     setSheetOpen(true);
-  }, []);
+    pushLayer("sheet");
+  }, [pushLayer]);
+
+  const navigateToTab = useCallback(
+    (newTab: Tab) => {
+      if (newTab === "home") {
+        const layers: AppBackLayer[] = [];
+        if (selectedMerchant) layers.push("merchant");
+        if (tab === "insights") layers.push("insights");
+        if (layers.length > 0) {
+          clearLayers(layers);
+          setSelectedMerchant(null);
+        }
+      } else if (newTab === "insights" && tab !== "insights") {
+        pushLayer("insights");
+      }
+      setTab(newTab);
+    },
+    [clearLayers, pushLayer, selectedMerchant, tab],
+  );
+
+  const openMerchant = useCallback(
+    (merchant: SelectedMerchant) => {
+      setSelectedMerchant(merchant);
+      pushLayer("merchant");
+    },
+    [pushLayer],
+  );
+
+  const closeMerchant = useCallback(() => {
+    if (!dismissLayer("merchant")) {
+      setSelectedMerchant(null);
+    }
+  }, [dismissLayer]);
 
   const showReminderAlert = useCallback((alert: ReminderAlert) => {
     setReminderAlert(alert);
@@ -104,6 +159,7 @@ export function AppShell() {
     setEditingRecurring(null);
     setSheetKind("transaction");
     setSheetOpen(true);
+    pushLayer("sheet");
   }
 
   function openAddRecurring() {
@@ -111,6 +167,7 @@ export function AppShell() {
     setEditingTransaction(null);
     setSheetKind("recurring");
     setSheetOpen(true);
+    pushLayer("sheet");
   }
 
   function openEditRecurring(rule: RecurringRule) {
@@ -118,13 +175,13 @@ export function AppShell() {
     setEditingTransaction(null);
     setSheetKind("recurring");
     setSheetOpen(true);
+    pushLayer("sheet");
   }
 
   function closeSheet() {
-    setSheetOpen(false);
-    setEditingTransaction(null);
-    setEditingRecurring(null);
-    setSheetKind(null);
+    if (sheetOpen && !dismissLayer("sheet")) {
+      closeSheetStateOnly();
+    }
   }
 
   async function handleDeleteRecurring(rule: RecurringRule) {
@@ -156,7 +213,7 @@ export function AppShell() {
     try {
       await signOutUser();
       setTab("home");
-      closeSheet();
+      closeSheetStateOnly();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sign-out failed");
     } finally {
@@ -248,11 +305,18 @@ export function AppShell() {
             budgets={budgets}
             error={transactionsError}
             onEditTransaction={openEditSheet}
-            onOpenInsights={() => setTab("insights")}
+            onOpenInsights={() => navigateToTab("insights")}
             onAddTransaction={openAddSheet}
           />
         ) : tab === "insights" ? (
-          <InsightsView rows={transactions} budgets={budgets} />
+          <InsightsView
+            rows={transactions}
+            budgets={budgets}
+            selectedMerchant={selectedMerchant}
+            onOpenMerchant={openMerchant}
+            onCloseMerchant={closeMerchant}
+            onEditTransaction={openEditSheet}
+          />
         ) : (
           <MoreView
             email={user.email}
@@ -282,7 +346,7 @@ export function AppShell() {
 
       <BottomNav
         activeTab={tab}
-        onTabChange={setTab}
+        onTabChange={navigateToTab}
         onAdd={openAddSheet}
       />
 

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type SheetMotion = "enter" | "exit" | null;
 
 type BottomSheetProps = {
   open: boolean;
@@ -15,31 +17,80 @@ export function BottomSheet({
   onClose,
   children,
 }: BottomSheetProps) {
+  const [present, setPresent] = useState(open);
+  const [motion, setMotion] = useState<SheetMotion>(open ? "enter" : null);
+
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      setPresent(true);
+      setMotion("enter");
+      return;
+    }
+    if (present) {
+      setMotion("exit");
+    }
+  }, [open, present]);
+
+  useEffect(() => {
+    if (!present) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [open]);
+  }, [present]);
 
-  if (!open) return null;
+  function handlePanelAnimationEnd(
+    event: React.AnimationEvent<HTMLDivElement>,
+  ) {
+    if (event.target !== event.currentTarget) return;
+    if (motion === "enter") {
+      setMotion(null);
+      return;
+    }
+    if (motion === "exit") {
+      setPresent(false);
+      setMotion(null);
+    }
+  }
+
+  if (!present) return null;
+
+  const panelClass =
+    motion === "enter"
+      ? "bottom-sheet-enter"
+      : motion === "exit"
+        ? "bottom-sheet-exit"
+        : "bottom-sheet-open";
+
+  const backdropVisible = motion !== "exit";
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
+      className={`fixed inset-0 z-50 flex flex-col justify-end ${
+        motion === "exit" ? "pointer-events-none" : ""
+      }`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="sheet-title"
+      aria-hidden={motion === "exit"}
     >
       <button
         type="button"
         aria-label="Close"
-        className="absolute inset-0 bg-black/40"
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ease-out ${
+          backdropVisible ? "opacity-100" : "opacity-0"
+        }`}
         onClick={onClose}
+        tabIndex={motion === "exit" ? -1 : 0}
       />
-      <div className="relative flex max-h-[92dvh] flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-zinc-900">
+      <div
+        className={`relative flex max-h-[92dvh] flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-zinc-900 ${panelClass}`}
+        style={{
+          paddingBottom: "max(0px, env(safe-area-inset-bottom))",
+        }}
+        onAnimationEnd={handlePanelAnimationEnd}
+      >
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
           <h2
             id="sheet-title"
@@ -51,6 +102,7 @@ export function BottomSheet({
             type="button"
             onClick={onClose}
             className="rounded-lg px-2 py-1 text-sm font-medium text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            tabIndex={motion === "exit" ? -1 : 0}
           >
             Cancel
           </button>
