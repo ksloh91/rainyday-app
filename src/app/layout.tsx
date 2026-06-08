@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Money Manager",
+  title: "Rainy Day Money Manager",
   description: "Spending tracker — Next.js, Capacitor, Firebase",
 };
 

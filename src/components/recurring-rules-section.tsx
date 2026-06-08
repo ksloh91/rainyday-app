@@ -1,6 +1,7 @@
 "use client";
 
 import { CategoryIcon } from "@/components/category-icon";
+import { AppCard, AppCardHeader } from "@/components/ui-card";
 import { formatMoney } from "@/lib/format-date";
 import { getCategoryLabel } from "@/lib/categories";
 import {
@@ -40,29 +41,24 @@ export function RecurringRulesSection({
   onDelete,
 }: RecurringRulesSectionProps) {
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Recurring
-          </p>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Auto-adds transactions when due.
-          </p>
-          {materializing ? (
-            <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-              Posting due items…
-            </p>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={onAdd}
-          className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white active:bg-emerald-500"
-        >
-          Add
-        </button>
-      </div>
+    <AppCard>
+      <AppCardHeader
+        title="Recurring"
+        subtitle={
+          materializing
+            ? "Posting due items…"
+            : "Auto-adds transactions when due."
+        }
+        action={
+          <button
+            type="button"
+            onClick={onAdd}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white active:bg-emerald-500"
+          >
+            Add
+          </button>
+        }
+      />
 
       {loading ? (
         <p className="px-4 py-6 text-sm text-zinc-500">Loading…</p>
@@ -149,6 +145,6 @@ export function RecurringRulesSection({
           {error}
         </p>
       ) : null}
-    </section>
+    </AppCard>
   );
 }

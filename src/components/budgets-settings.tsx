@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CategoryIcon } from "@/components/category-icon";
+import { AppCard, AppCardHeader } from "@/components/ui-card";
 import {
   categoriesForType,
   getCategoryLabel,
@@ -73,21 +74,16 @@ export function BudgetsSettings({
   }
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Category budgets
-        </p>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Set daily, weekly, or monthly limits. Progress shows on Home and
-          Insights.
-        </p>
-        <div className="mt-3 grid grid-cols-[1fr_repeat(3,3.25rem)] gap-2 text-center text-[10px] font-medium uppercase tracking-wide text-zinc-400">
-          <span className="text-left">Category</span>
-          {PERIODS.map((p) => (
-            <span key={p.key}>{p.short}</span>
-          ))}
-        </div>
+    <AppCard>
+      <AppCardHeader
+        title="Category budgets"
+        subtitle="Daily, weekly, and monthly limits on Home."
+      />
+      <div className="grid grid-cols-[1fr_repeat(3,3.25rem)] gap-2 px-4 pb-2 text-center text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+        <span className="text-left">Category</span>
+        {PERIODS.map((p) => (
+          <span key={p.key}>{p.short}</span>
+        ))}
       </div>
 
       {loading ? (
@@ -140,6 +136,6 @@ export function BudgetsSettings({
           {error}
         </p>
       ) : null}
-    </section>
+    </AppCard>
   );
 }
