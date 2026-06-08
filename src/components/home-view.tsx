@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { HomeEmptyState } from "@/components/home-empty-state";
+import { HomeLogNudge } from "@/components/home-log-nudge";
 import { HomeSummaryCard } from "@/components/home-summary-card";
 import {
   TransactionDayList,
@@ -18,6 +19,7 @@ type HomeViewProps = {
   error?: string | null;
   onEditTransaction?: (transaction: TransactionRow) => void;
   onOpenInsights?: () => void;
+  onAddTransaction?: () => void;
 };
 
 function combinedDailyBudgetPercent(
@@ -39,6 +41,7 @@ export function HomeView({
   error,
   onEditTransaction,
   onOpenInsights,
+  onAddTransaction,
 }: HomeViewProps) {
   const todaySpent = useMemo(() => {
     return rows
@@ -49,6 +52,11 @@ export function HomeView({
   const hasAnyTransactions = rows.length > 0;
   const hasTodayTransactions = useMemo(
     () => rows.some((r) => isToday(r.occurredAt)),
+    [rows],
+  );
+  const hasTodayExpenses = useMemo(
+    () =>
+      rows.some((r) => isToday(r.occurredAt) && r.type === "expense"),
     [rows],
   );
 
@@ -80,6 +88,13 @@ export function HomeView({
       <section className="space-y-4">
         {error ? (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        ) : null}
+
+        {onAddTransaction ? (
+          <HomeLogNudge
+            hasLoggedToday={hasTodayExpenses}
+            onAdd={onAddTransaction}
+          />
         ) : null}
 
         {!hasAnyTransactions ? (

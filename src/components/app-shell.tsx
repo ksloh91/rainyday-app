@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { signInWithGoogle, signOutUser } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategoryBudgets } from "@/hooks/use-category-budgets";
@@ -15,6 +15,13 @@ import { TransactionForm } from "@/components/transaction-form";
 import { formatWeekRange } from "@/lib/format-date";
 import { collectFieldSuggestions } from "@/lib/transaction-suggestions";
 import { useRecurringRules } from "@/hooks/use-recurring-rules";
+import { useReminderSettings } from "@/hooks/use-reminder-settings";
+import {
+  useExpenseReminders,
+  useReminderAlerts,
+  type ReminderAlert,
+} from "@/hooks/use-expense-reminders";
+import { ReminderPopup } from "@/components/reminder-popup";
 import type { RecurringRule } from "@/lib/recurring";
 import type { Transaction } from "@/lib/transactions";
 
@@ -31,6 +38,9 @@ export function AppShell() {
   const [sheetKind, setSheetKind] = useState<SheetKind>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reminderAlert, setReminderAlert] = useState<ReminderAlert | null>(
+    null,
+  );
 
   const userId = user?.uid ?? "";
   const { rows: transactions, error: transactionsError } =
@@ -59,12 +69,34 @@ export function AppShell() {
     () => collectFieldSuggestions(transactions, "merchant"),
     [transactions],
   );
-
-  function openAddSheet() {
+  const {
+    settings: reminderSettings,
+    loading: remindersLoading,
+    saving: remindersSaving,
+    error: remindersError,
+    updateSettings: updateReminderSettings,
+  } = useReminderSettings(userId);
+  const openAddSheet = useCallback(() => {
     setEditingTransaction(null);
     setEditingRecurring(null);
     setSheetKind("transaction");
     setSheetOpen(true);
+  }, []);
+
+  const showReminderAlert = useCallback((alert: ReminderAlert) => {
+    setReminderAlert(alert);
+  }, []);
+
+  useExpenseReminders(reminderSettings, ready && !!user);
+  useReminderAlerts(reminderSettings, ready && !!user, showReminderAlert);
+
+  function dismissReminderAlert() {
+    setReminderAlert(null);
+  }
+
+  function logFromReminderAlert() {
+    setReminderAlert(null);
+    openAddSheet();
   }
 
   function openEditSheet(transaction: Transaction) {
@@ -217,6 +249,7 @@ export function AppShell() {
             error={transactionsError}
             onEditTransaction={openEditSheet}
             onOpenInsights={() => setTab("insights")}
+            onAddTransaction={openAddSheet}
           />
         ) : tab === "insights" ? (
           <InsightsView rows={transactions} budgets={budgets} />
@@ -236,6 +269,11 @@ export function AppShell() {
             onEditRecurring={openEditRecurring}
             onToggleRecurring={(rule) => setRuleActive(rule.id, !rule.active)}
             onDeleteRecurring={handleDeleteRecurring}
+            reminderSettings={reminderSettings}
+            remindersLoading={remindersLoading}
+            remindersSaving={remindersSaving}
+            remindersError={remindersError}
+            onSaveReminderSettings={updateReminderSettings}
             onSignOut={handleSignOut}
             busy={busy}
           />
@@ -246,6 +284,14 @@ export function AppShell() {
         activeTab={tab}
         onTabChange={setTab}
         onAdd={openAddSheet}
+      />
+
+      <ReminderPopup
+        open={reminderAlert !== null}
+        title={reminderAlert?.title ?? ""}
+        body={reminderAlert?.body ?? ""}
+        onLog={logFromReminderAlert}
+        onDismiss={dismissReminderAlert}
       />
 
       <BottomSheet
