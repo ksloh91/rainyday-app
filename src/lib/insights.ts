@@ -7,13 +7,25 @@ import {
   isThisWeek,
 } from "@/lib/format-date";
 import type { CategoryBudgetStatus } from "@/lib/budgets";
-import type { Transaction } from "@/lib/transactions";
+import {
+  merchantDisplayName,
+  merchantGroupKey,
+  type Transaction,
+} from "@/lib/transactions";
 
 export type CategorySpendRow = {
   categoryId: CategoryId;
   label: string;
   amount: number;
   share: number;
+};
+
+export type MerchantSpendRow = {
+  key: string;
+  label: string;
+  amount: number;
+  share: number;
+  count: number;
 };
 
 export type InsightsSummary = {
@@ -25,6 +37,7 @@ export type InsightsSummary = {
   monthSpent: number;
   monthIncome: number;
   topCategories: CategorySpendRow[];
+  topMerchants: MerchantSpendRow[];
   overBudgetCount: number;
   nearBudgetCount: number;
 };
@@ -74,6 +87,35 @@ export function computeInsights(
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 
+  const merchantTotals = new Map<
+    string,
+    { label: string; amount: number; count: number }
+  >();
+  for (const tx of transactions) {
+    if (tx.type !== "expense" || !isThisMonth(tx.occurredAt)) continue;
+    const key = merchantGroupKey(tx);
+    const label = merchantDisplayName(tx);
+    if (!key || !label) continue;
+    const existing = merchantTotals.get(key);
+    if (existing) {
+      existing.amount += tx.amount;
+      existing.count += 1;
+    } else {
+      merchantTotals.set(key, { label, amount: tx.amount, count: 1 });
+    }
+  }
+
+  const topMerchants = [...merchantTotals.entries()]
+    .map(([key, row]) => ({
+      key,
+      label: row.label,
+      amount: row.amount,
+      count: row.count,
+      share: monthSpent > 0 ? (row.amount / monthSpent) * 100 : 0,
+    }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+
   const overBudgetCount = budgetStatuses.filter((s) => s.spent > s.limit).length;
   const nearBudgetCount = budgetStatuses.filter(
     (s) => s.percentUsed >= 80 && s.spent <= s.limit,
@@ -88,6 +130,7 @@ export function computeInsights(
     monthSpent,
     monthIncome,
     topCategories,
+    topMerchants,
     overBudgetCount,
     nearBudgetCount,
   };
@@ -105,4 +148,18 @@ export function formatChangeMoney(current: number, previous: number) {
   const diff = current - previous;
   if (previous === 0) return null;
   return `${diff >= 0 ? "+" : "−"}${formatMoney(Math.abs(diff))} vs last week`;
+}
+
+export function transactionsForMerchant(
+  transactions: Transaction[],
+  merchantKey: string,
+): Transaction[] {
+  return transactions
+    .filter(
+      (tx) =>
+        tx.type === "expense" &&
+        isThisMonth(tx.occurredAt) &&
+        merchantGroupKey(tx) === merchantKey,
+    )
+    .sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
 }

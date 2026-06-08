@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { CategoryIcon } from "@/components/category-icon";
 import { CategoryBudgetProgress } from "@/components/category-budget-progress";
+import { MerchantTransactionsView } from "@/components/merchant-transactions-view";
 import { AppCard, AppCardBody, AppCardHeader } from "@/components/ui-card";
 import {
   buildBudgetStatuses,
@@ -18,12 +19,28 @@ import {
 } from "@/lib/format-date";
 import type { Transaction } from "@/lib/transactions";
 
+export type SelectedMerchant = {
+  key: string;
+  label: string;
+};
+
 type InsightsViewProps = {
   rows: Transaction[];
   budgets?: CategoryBudget[];
+  selectedMerchant: SelectedMerchant | null;
+  onOpenMerchant: (merchant: SelectedMerchant) => void;
+  onCloseMerchant: () => void;
+  onEditTransaction?: (transaction: Transaction) => void;
 };
 
-export function InsightsView({ rows, budgets = [] }: InsightsViewProps) {
+export function InsightsView({
+  rows,
+  budgets = [],
+  selectedMerchant,
+  onOpenMerchant,
+  onCloseMerchant,
+  onEditTransaction,
+}: InsightsViewProps) {
   const budgetStatuses = useMemo(
     () => buildBudgetStatuses(budgets, rows, getCategoryLabel),
     [budgets, rows],
@@ -41,6 +58,18 @@ export function InsightsView({ rows, budgets = [] }: InsightsViewProps) {
     insights.weekSpentChange !== null && insights.weekSpentChange > 0
       ? "text-amber-200"
       : "text-emerald-100";
+
+  if (selectedMerchant) {
+    return (
+      <MerchantTransactionsView
+        merchantKey={selectedMerchant.key}
+        merchantLabel={selectedMerchant.label}
+        rows={rows}
+        onBack={onCloseMerchant}
+        onEditTransaction={onEditTransaction}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -150,6 +179,58 @@ export function InsightsView({ rows, budgets = [] }: InsightsViewProps) {
           </AppCardBody>
         </AppCard>
       )}
+
+      {insights.topMerchants.length > 0 ? (
+        <AppCard>
+          <AppCardHeader
+            title="Top merchants"
+            subtitle="By merchant name this month"
+          />
+          <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {insights.topMerchants.map((row) => (
+              <li key={row.key}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onOpenMerchant({ key: row.key, label: row.label })
+                  }
+                  className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-zinc-50 dark:active:bg-zinc-800/50"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-sm font-bold uppercase text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {row.label.slice(0, 2)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">
+                        {row.label}
+                      </p>
+                      <p className="shrink-0 text-sm font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                        {formatMoney(row.amount)}
+                      </p>
+                    </div>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                      <div
+                        className="h-full rounded-full bg-zinc-700 transition-all duration-700 ease-out dark:bg-zinc-300"
+                        style={{ width: `${Math.min(100, row.share)}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {Math.round(row.share)}% of month
+                      {row.count > 1 ? ` · ${row.count} visits` : null}
+                    </p>
+                  </div>
+                  <span
+                    className="shrink-0 text-zinc-400 dark:text-zinc-500"
+                    aria-hidden
+                  >
+                    ›
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </AppCard>
+      ) : null}
 
       <CategoryBudgetProgress groups={budgetGroups} />
     </div>
