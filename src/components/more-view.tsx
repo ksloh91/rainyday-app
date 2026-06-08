@@ -2,6 +2,7 @@
 
 import { BudgetsSettings } from "@/components/budgets-settings";
 import { RecurringRulesSection } from "@/components/recurring-rules-section";
+import { AppCard, AppCardBody, AppCardHeader } from "@/components/ui-card";
 import type { CategoryId } from "@/lib/categories";
 import type { CategoryBudget, CategoryBudgetLimits } from "@/lib/budgets";
 import type { RecurringRule } from "@/lib/recurring";
@@ -67,25 +68,25 @@ export function MoreView({
         onSave={onSetCategoryBudget}
       />
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Account
-        </p>
-        <p className="mt-2 text-sm font-medium text-zinc-900 dark:text-zinc-50">
-          {email ?? "Signed in"}
-        </p>
-      </section>
+      <AppCard>
+        <AppCardHeader title="Account" />
+        <AppCardBody className="!py-3">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            {email ?? "Signed in"}
+          </p>
+        </AppCardBody>
+      </AppCard>
 
-      <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <AppCard>
         <button
           type="button"
           onClick={onSignOut}
           disabled={busy}
-          className="w-full px-4 py-3.5 text-left text-sm font-medium text-red-600 disabled:opacity-50 dark:text-red-400"
+          className="w-full px-4 py-3.5 text-left text-sm font-semibold text-red-600 transition active:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:active:bg-red-950/30"
         >
           {busy ? "Signing out…" : "Sign out"}
         </button>
-      </section>
+      </AppCard>
     </div>
   );
 }

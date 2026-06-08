@@ -146,12 +146,19 @@ export function CategoryBadge({
   size = "md",
 }: {
   categoryId: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }) {
   const meta = getCategoryMeta(categoryId);
   const dim =
-    size === "sm" ? "h-8 w-8" : size === "lg" ? "h-12 w-12" : "h-10 w-10";
-  const iconSize = size === "sm" ? 16 : size === "lg" ? 24 : 20;
+    size === "sm"
+      ? "h-8 w-8"
+      : size === "lg"
+        ? "h-12 w-12"
+        : size === "xl"
+          ? "h-14 w-14"
+          : "h-10 w-10";
+  const iconSize =
+    size === "sm" ? 16 : size === "lg" ? 24 : size === "xl" ? 28 : 20;
   return (
     <span
       className={`flex ${dim} shrink-0 items-center justify-center rounded-full text-white ${meta.bg}`}

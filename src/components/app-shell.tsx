@@ -12,8 +12,7 @@ import { InsightsView } from "@/components/insights-view";
 import { MoreView } from "@/components/more-view";
 import { RecurringRuleForm } from "@/components/recurring-rule-form";
 import { TransactionForm } from "@/components/transaction-form";
-import { CalendarIcon } from "@/components/icons";
-import { formatTodayHeader, formatWeekRange } from "@/lib/format-date";
+import { formatWeekRange } from "@/lib/format-date";
 import { collectFieldSuggestions } from "@/lib/transaction-suggestions";
 import { useRecurringRules } from "@/hooks/use-recurring-rules";
 import type { RecurringRule } from "@/lib/recurring";
@@ -185,15 +184,9 @@ export function AppShell() {
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
         {tab === "home" ? (
-          <>
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-              Today
-            </h1>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-              <CalendarIcon size={14} className="shrink-0 opacity-70" />
-              {formatTodayHeader()}
-            </p>
-          </>
+          <h1 className="text-base font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+            Rainy Day Money Manager
+          </h1>
         ) : tab === "insights" ? (
           <>
             <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
@@ -223,6 +216,7 @@ export function AppShell() {
             budgets={budgets}
             error={transactionsError}
             onEditTransaction={openEditSheet}
+            onOpenInsights={() => setTab("insights")}
           />
         ) : tab === "insights" ? (
           <InsightsView rows={transactions} budgets={budgets} />
